@@ -4,6 +4,7 @@ import type {
   ApiSuccessBody,
   ChannelLatestData,
   ChannelVideosData,
+  CreditsData,
   GetChannelLatestParams,
   GetPlaylistParams,
   GetTranscriptParams,
@@ -189,6 +190,11 @@ export class GetYouTubeTranscript {
       channel: params.channel,
       continuation: params.continuation,
     });
+  }
+
+  /** Remaining credit balance, plan, and rate limit for this key. Free. */
+  getCredits(): Promise<CreditsData> {
+    return this.get<CreditsData>("/credits");
   }
 }
 

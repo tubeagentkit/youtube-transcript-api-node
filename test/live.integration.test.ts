@@ -36,6 +36,13 @@ describe.skipIf(!apiKey)("live integration", () => {
     20_000,
   );
 
+  it("getCredits returns the key's plan and balance (free)", async () => {
+    const data = await client.getCredits();
+    expect(typeof data.plan_credits_left).toBe("number");
+    expect(typeof data.rate_limit_per_minute).toBe("number");
+    expect(["free", "monthly", "yearly"]).toContain(data.plan);
+  });
+
   it.skipIf(!runPaid)(
     "getTranscript returns a transcript for a known video (1 credit)",
     async () => {

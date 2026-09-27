@@ -115,6 +115,23 @@ describe("GetYouTubeTranscript request construction", () => {
     );
   });
 
+  it("builds the correct URL for getCredits with no query params", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        success: true,
+        data: { plan_credits_left: 87, topup_credits_left: 0, plan: "monthly", rate_limit_per_minute: 200 },
+      }),
+    );
+
+    const result = await client.getCredits();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://getyoutubetranscript.com/api/v1/credits");
+    expect(init.method).toBe("GET");
+    expect(result.plan).toBe("monthly");
+    expect(result.plan_credits_left).toBe(87);
+  });
+
   it("honors a custom baseUrl", async () => {
     const localClient = new GetYouTubeTranscript({
       apiKey: "sk_live_test123",

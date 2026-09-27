@@ -195,6 +195,18 @@ export interface ListChannelVideosParams {
 }
 
 // ---------------------------------------------------------------------------
+// GET /credits (free)
+// ---------------------------------------------------------------------------
+
+export interface CreditsData {
+  plan_credits_left: number;
+  topup_credits_left: number;
+  plan: "free" | "monthly" | "yearly";
+  rate_limit_per_minute: number;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // POST /signup, POST /signup/verify (free, no key required)
 // ---------------------------------------------------------------------------
 

@@ -63,6 +63,9 @@ const channelResults = await client.searchChannel({ channel: "@mkbhd", q: "iphon
 
 // List all of a channel's uploads
 const uploads = await client.listChannelVideos({ channel: "@mkbhd" });
+
+// Check remaining credits, plan, and rate limit (free)
+const { plan_credits_left, plan } = await client.getCredits();
 ```
 
 Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideos`) return a continuation token you feed back in on the next call:
@@ -102,6 +105,7 @@ try {
 | `getChannelLatest(params)` | `GET /channel/latest` | free |
 | `searchChannel(params)` | `GET /channel/search` | 1 |
 | `listChannelVideos(params)` | `GET /channel/videos` | 1 |
+| `getCredits()` | `GET /credits` | free |
 | `signup(email)` | `POST /signup` | free |
 | `verifySignup(email, otp)` | `POST /signup/verify` | free |
 
