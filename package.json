@@ -1,0 +1,59 @@
+{
+  "name": "getyoutubetranscript",
+  "version": "0.1.0",
+  "description": "Official Node.js / TypeScript SDK for the GetYouTubeTranscript REST API - transcripts, search, channel, and playlist data for YouTube.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --exclude '**/live.integration.test.ts'",
+    "test:live": "vitest run test/live.integration.test.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "youtube",
+    "transcript",
+    "youtube-api",
+    "youtube-transcript",
+    "youtube-search",
+    "sdk"
+  ],
+  "author": "tubeagentkit",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tubeagentkit/node-sdk.git"
+  },
+  "homepage": "https://getyoutubetranscript.com",
+  "bugs": {
+    "url": "https://github.com/tubeagentkit/node-sdk/issues"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.2"
+  }
+}

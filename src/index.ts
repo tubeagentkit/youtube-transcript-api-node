@@ -1,0 +1,27 @@
+export { GetYouTubeTranscript, signup, verifySignup } from "./client.js";
+export { GetYouTubeTranscriptError } from "./errors.js";
+export type {
+  ApiErrorBody,
+  ApiSuccessBody,
+  ChannelLatestData,
+  ChannelResult,
+  ChannelVideo,
+  ChannelVideosData,
+  GetChannelLatestParams,
+  GetPlaylistParams,
+  GetTranscriptParams,
+  GetYouTubeTranscriptOptions,
+  ListChannelVideosParams,
+  PlaylistData,
+  PlaylistVideo,
+  ResolveChannelData,
+  ResolveChannelParams,
+  SearchChannelParams,
+  SearchData,
+  SearchParams,
+  SearchPagination,
+  SignupResponse,
+  TranscriptData,
+  VerifySignupResponse,
+  VideoResult,
+} from "./types.js";
