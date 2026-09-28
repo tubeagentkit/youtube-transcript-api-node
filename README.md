@@ -1,6 +1,10 @@
-# getyoutubetranscript
+# YouTube Transcript API: Node.js / TypeScript SDK
 
-Node.js / TypeScript SDK for the [GetYouTubeTranscript](https://getyoutubetranscript.com) API - YouTube transcripts, search, channel, and playlist data over a simple REST API.
+[![License](https://img.shields.io/badge/License-MIT-4CAF50?style=for-the-badge)](./LICENSE)
+[![Website](https://img.shields.io/badge/Website-getyoutubetranscript.com-FF3B00?style=for-the-badge)](https://getyoutubetranscript.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+The official Node.js / TypeScript SDK (`getyoutubetranscript`) for the [GetYouTubeTranscript](https://getyoutubetranscript.com) YouTube Transcript API. Get YouTube video transcripts in JavaScript without a Google API key, yt-dlp, or a headless browser, plus YouTube search, channel, and playlist data over a simple REST API.
 
 - Fully typed, Promise-based client
 - Zero dependencies - built on native `fetch` (Node 18+)
@@ -130,6 +134,15 @@ GYT_API_KEY=sk_live_... npm run test:live
 
 - Docs: [getyoutubetranscript.com/docs](https://getyoutubetranscript.com/docs)
 - API reference (OpenAPI): [getyoutubetranscript.com/openapi.json](https://getyoutubetranscript.com/openapi.json)
+
+## Related projects
+
+Other ways to use the [GetYouTubeTranscript API](https://getyoutubetranscript.com):
+
+- [youtube-mcp](https://github.com/tubeagentkit/youtube-mcp): Remote YouTube MCP server for Claude, ChatGPT, Cursor and VS Code
+- [youtube-transcript-skills](https://github.com/tubeagentkit/youtube-transcript-skills): YouTube transcript Agent Skill for Claude Code, Cursor, Codex and OpenClaw
+- [n8n-nodes-getyoutubetranscript](https://github.com/tubeagentkit/n8n-nodes-getyoutubetranscript): n8n community node, also usable as an AI Agent tool
+- [python-sdk](https://github.com/tubeagentkit/python-sdk): YouTube Transcript API SDK for Python
 
 ## License
 
