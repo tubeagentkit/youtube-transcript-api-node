@@ -46,11 +46,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tubeagentkit/node-sdk.git"
+    "url": "git+https://github.com/tubeagentkit/youtube-transcript-api-node.git"
   },
   "homepage": "https://getyoutubetranscript.com",
   "bugs": {
-    "url": "https://github.com/tubeagentkit/node-sdk/issues"
+    "url": "https://github.com/tubeagentkit/youtube-transcript-api-node/issues"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

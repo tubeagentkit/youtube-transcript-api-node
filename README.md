@@ -14,7 +14,7 @@ The official Node.js / TypeScript SDK (`getyoutubetranscript`) for the [GetYouTu
 Not yet published to npm. Install directly from GitHub:
 
 ```bash
-npm install github:tubeagentkit/node-sdk
+npm install github:tubeagentkit/youtube-transcript-api-node
 ```
 
 ## Quickstart
@@ -142,7 +142,7 @@ Other ways to use the [GetYouTubeTranscript API](https://getyoutubetranscript.co
 - [youtube-mcp](https://github.com/tubeagentkit/youtube-mcp): Remote YouTube MCP server for Claude, ChatGPT, Cursor and VS Code
 - [youtube-transcript-skills](https://github.com/tubeagentkit/youtube-transcript-skills): YouTube transcript Agent Skill for Claude Code, Cursor, Codex and OpenClaw
 - [n8n-nodes-getyoutubetranscript](https://github.com/tubeagentkit/n8n-nodes-getyoutubetranscript): n8n community node, also usable as an AI Agent tool
-- [python-sdk](https://github.com/tubeagentkit/python-sdk): YouTube Transcript API SDK for Python
+- [youtube-transcript-api-python](https://github.com/tubeagentkit/youtube-transcript-api-python): YouTube Transcript API SDK for Python
 
 ## License
 
