@@ -17,6 +17,7 @@ export type {
   ResolveChannelData,
   ResolveChannelParams,
   SearchChannelParams,
+  Segment,
   SearchData,
   SearchParams,
   SearchPagination,

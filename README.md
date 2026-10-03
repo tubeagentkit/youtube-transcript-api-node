@@ -31,6 +31,21 @@ const { title, transcript, word_count } = await client.getTranscript({
 console.log(title, word_count, transcript.slice(0, 200));
 ```
 
+### Timestamps
+
+Pass `timestamps: true` to also get one entry per caption line in `segments` (same 1 credit). Without it, the response has no `segments` key.
+
+```ts
+const { transcript, segments } = await client.getTranscript({
+  v: "5e37ZT3SQbk",
+  timestamps: true,
+});
+
+console.log(segments?.[0]); // { start: 3.96, duration: 4.56, text: "So, Reed, education, which a lot of" }
+```
+
+Each segment is `{ start, duration, text }` with `start` and `duration` in seconds (exported as the `Segment` type).
+
 ## Getting an API key
 
 Every request needs an API key. New accounts get **100 free credits, no card required** - grab one at [getyoutubetranscript.com](https://getyoutubetranscript.com).
@@ -102,7 +117,7 @@ try {
 
 | Method | Endpoint | Credits |
 | --- | --- | --- |
-| `getTranscript(params)` | `GET /transcript` | 1 |
+| `getTranscript(params)` | `GET /transcript` (optional `timestamps: true`) | 1 |
 | `search(params)` | `GET /search` | 1 |
 | `resolveChannel(params)` | `GET /resolve` | free |
 | `getPlaylist(params)` | `GET /playlist` | 1 |

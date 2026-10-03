@@ -30,6 +30,20 @@ export interface GetTranscriptParams {
   v: string;
   /** Caption language code, e.g. 'en', 'es'. Defaults to 'en'. */
   language?: string;
+  /**
+   * Also return per-line timing as `segments`. Same 1 credit. The query
+   * param is only sent when this is `true`.
+   */
+  timestamps?: boolean;
+}
+
+/** One caption line with its timing, returned in `segments` when `timestamps: true`. */
+export interface Segment {
+  /** Start time in seconds. */
+  start: number;
+  /** Duration in seconds. */
+  duration: number;
+  text: string;
 }
 
 export interface TranscriptData {
@@ -41,6 +55,8 @@ export interface TranscriptData {
   thumbnail_url: string;
   transcript: string;
   word_count: number;
+  /** Per-line timing. Present only when the request set `timestamps: true`. */
+  segments?: Segment[];
 }
 
 // ---------------------------------------------------------------------------

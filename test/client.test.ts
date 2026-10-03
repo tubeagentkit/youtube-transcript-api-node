@@ -80,6 +80,43 @@ describe("GetYouTubeTranscript request construction", () => {
     expect(url).toBe("https://getyoutubetranscript.com/api/v1/transcript?v=abc123");
   });
 
+  it("sends timestamps=true and returns segments when requested", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        success: true,
+        data: {
+          video_id: "5e37ZT3SQbk",
+          language_code: "en",
+          title: "t",
+          author_name: "a",
+          author_url: "u",
+          thumbnail_url: "th",
+          transcript: "So, Reed, education",
+          word_count: 3,
+          segments: [{ start: 3.96, duration: 4.56, text: "So, Reed, education" }],
+        },
+      }),
+    );
+
+    const result = await client.getTranscript({ v: "5e37ZT3SQbk", language: "en", timestamps: true });
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://getyoutubetranscript.com/api/v1/transcript?v=5e37ZT3SQbk&language=en&timestamps=true");
+    expect(result.segments).toEqual([{ start: 3.96, duration: 4.56, text: "So, Reed, education" }]);
+  });
+
+  it("does not send timestamps when false or omitted, and segments is absent", async () => {
+    const body = { success: true, data: { video_id: "x", language_code: "en", title: "t", author_name: "a", author_url: "u", thumbnail_url: "th", transcript: "tr", word_count: 1 } };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, body)).mockResolvedValueOnce(jsonResponse(200, body));
+
+    const result = await client.getTranscript({ v: "abc123", timestamps: false });
+    await client.getTranscript({ v: "abc123" });
+
+    expect(fetchMock.mock.calls[0][0]).toBe("https://getyoutubetranscript.com/api/v1/transcript?v=abc123");
+    expect(fetchMock.mock.calls[1][0]).toBe("https://getyoutubetranscript.com/api/v1/transcript?v=abc123");
+    expect(result.segments).toBeUndefined();
+  });
+
   it("maps pageToken to page_token for search()", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, { success: true, data: { query: "lofi", video_results: [], pagination: {} } }),

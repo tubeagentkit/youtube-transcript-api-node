@@ -124,11 +124,15 @@ export class GetYouTubeTranscript {
     });
   }
 
-  /** Full transcript for one video, plus title/author/thumbnail metadata. 1 credit. */
+  /**
+   * Full transcript for one video, plus title/author/thumbnail metadata. 1 credit.
+   * Pass `timestamps: true` to also get per-line `segments` (same credit).
+   */
   getTranscript(params: GetTranscriptParams): Promise<TranscriptData> {
     return this.get<TranscriptData>("/transcript", {
       v: params.v,
       language: params.language,
+      timestamps: params.timestamps ? true : undefined,
     });
   }
 
