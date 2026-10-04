@@ -85,7 +85,7 @@ async function request<T>(
  *
  * @example
  * ```ts
- * import { GetYouTubeTranscript } from "getyoutubetranscript";
+ * import { GetYouTubeTranscript } from "@tubeagentkit/getyoutubetranscript";
  *
  * const client = new GetYouTubeTranscript({ apiKey: process.env.GYT_API_KEY! });
  * const { transcript } = await client.getTranscript({ v: "jNQXAC9IVRw" });

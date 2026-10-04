@@ -4,23 +4,25 @@
 [![Website](https://img.shields.io/badge/Website-getyoutubetranscript.com-FF3B00?style=for-the-badge)](https://getyoutubetranscript.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 
-The official Node.js / TypeScript SDK (`getyoutubetranscript`) for the [GetYouTubeTranscript](https://getyoutubetranscript.com) YouTube Transcript API. Get YouTube video transcripts in JavaScript without a Google API key, yt-dlp, or a headless browser, plus YouTube search, channel, and playlist data over a simple REST API.
+The official Node.js / TypeScript SDK (`@tubeagentkit/getyoutubetranscript`) for the [GetYouTubeTranscript](https://getyoutubetranscript.com) YouTube Transcript API. Get YouTube video transcripts, captions and subtitles (optionally with per-line timestamps) in JavaScript without a Google API key, yt-dlp, or a headless browser, plus YouTube search, channel, and playlist data over a simple REST API.
 
 - Fully typed, Promise-based client
 - Zero dependencies - built on native `fetch` (Node 18+)
 - ESM and CommonJS builds, with `.d.ts` types included
 - Typed errors: every failed request throws a `GetYouTubeTranscriptError` with a `code`, `message`, and `statusCode`
 
-Not yet published to npm. Install directly from GitHub:
+[![npm](https://img.shields.io/npm/v/%40tubeagentkit%2Fgetyoutubetranscript)](https://www.npmjs.com/package/@tubeagentkit/getyoutubetranscript)
 
 ```bash
-npm install github:tubeagentkit/youtube-transcript-api-node
+npm install @tubeagentkit/getyoutubetranscript
 ```
+
+Works the same on a laptop, a VPS, a serverless function or a CI job: the API fetches transcripts on its own servers, so YouTube never sees (or blocks) your server's IP and there are no proxies to manage.
 
 ## Quickstart
 
 ```ts
-import { GetYouTubeTranscript } from "getyoutubetranscript";
+import { GetYouTubeTranscript } from "@tubeagentkit/getyoutubetranscript";
 
 const client = new GetYouTubeTranscript({ apiKey: process.env.GYT_API_KEY! });
 
@@ -53,7 +55,7 @@ Every request needs an API key. New accounts get **100 free credits, no card req
 Prefer to do it in code? Use the self-serve signup flow, which sends a 6-digit email OTP and hands back a key once verified:
 
 ```ts
-import { signup, verifySignup } from "getyoutubetranscript";
+import { signup, verifySignup } from "@tubeagentkit/getyoutubetranscript";
 
 await signup("you@example.com");
 // check your inbox for the 6-digit code, then:
@@ -99,7 +101,7 @@ while (page.pagination?.next_page_token) {
 ### Handling errors
 
 ```ts
-import { GetYouTubeTranscriptError } from "getyoutubetranscript";
+import { GetYouTubeTranscriptError } from "@tubeagentkit/getyoutubetranscript";
 
 try {
   await client.getTranscript({ v: "invalid" });
