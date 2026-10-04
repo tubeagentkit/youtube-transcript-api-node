@@ -119,7 +119,7 @@ describe("GetYouTubeTranscript request construction", () => {
 
   it("maps pageToken to page_token for search()", async () => {
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(200, { success: true, data: { query: "lofi", video_results: [], pagination: {} } }),
+      jsonResponse(200, { success: true, data: { query: "lofi", video_results: [], continuation_token: "c_next" } }),
     );
 
     await client.search({ pageToken: "CBkS...", type: "video", limit: 10 });
@@ -320,5 +320,24 @@ describe("signup / verifySignup standalone helpers", () => {
     await expect(
       verifySignup("dev@example.com", "000000", { fetch: fetchMock as unknown as typeof fetch }),
     ).rejects.toMatchObject({ code: "INVALID_OTP", statusCode: 400 });
+  });
+});
+
+describe("search pagination", () => {
+  it("returns continuation_token for the next page (README loop)", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { video_results: [{ title: "a" }], continuation_token: "c_2" } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { video_results: [{ title: "b" }], continuation_token: null } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const c = new GetYouTubeTranscript({ apiKey: "k" });
+    let page = await c.search({ q: "lofi beats" });
+    const titles = [page.video_results?.[0]?.title];
+    while (page.continuation_token) {
+      page = await c.search({ pageToken: page.continuation_token });
+      titles.push(page.video_results?.[0]?.title);
+    }
+    expect(titles).toEqual(["a", "b"]);
+    expect(new URL(fetchMock.mock.calls[1][0] as string).searchParams.get("page_token")).toBe("c_2");
+    vi.unstubAllGlobals();
   });
 });

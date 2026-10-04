@@ -93,8 +93,8 @@ Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideo
 
 ```ts
 let page = await client.search({ q: "lofi beats" });
-while (page.pagination?.next_page_token) {
-  page = await client.search({ pageToken: page.pagination.next_page_token });
+while (page.continuation_token) {
+  page = await client.search({ pageToken: page.continuation_token });
 }
 ```
 

@@ -138,8 +138,8 @@ export class GetYouTubeTranscript {
 
   /**
    * Search YouTube videos or channels. Provide `q` for a first page, or
-   * `pageToken` (from a previous response's `pagination.next_page_token`)
-   * to continue. 1 credit.
+   * `pageToken` (from a previous response's `continuation_token`) to
+   * continue. 1 credit.
    */
   search(params: SearchParams): Promise<SearchData> {
     return this.get<SearchData>("/search", {

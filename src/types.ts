@@ -94,6 +94,7 @@ export interface ChannelResult {
   [key: string]: unknown;
 }
 
+/** @deprecated The API never returns `pagination`; use `SearchData.continuation_token`. Kept for type compatibility. */
 export interface SearchPagination {
   next_page_token?: string;
   [key: string]: unknown;
@@ -103,6 +104,9 @@ export interface SearchData {
   query?: string;
   video_results?: VideoResult[];
   channel_results?: ChannelResult[];
+  /** Pass back as `pageToken` for the next page. Missing or null when there are no more pages. */
+  continuation_token?: string | null;
+  /** @deprecated Never returned by the API; use `continuation_token`. */
   pagination?: SearchPagination;
   [key: string]: unknown;
 }
