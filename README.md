@@ -48,6 +48,49 @@ console.log(segments?.[0]); // { start: 3.96, duration: 4.56, text: "So, Reed, e
 
 Each segment is `{ start, duration, text }` with `start` and `duration` in seconds (exported as the `Segment` type).
 
+### Where a transcript came from
+
+| Field | Meaning |
+| --- | --- |
+| `language_code` | The caption track actually returned |
+| `requested_language` | What you asked for. If it differs from `language_code`, YouTube didn't have that language |
+| `caption_type` | `"manual"` (uploaded by the creator), `"auto"` (YouTube speech recognition), or `null` if unknown |
+| `cached` | `true` when served from the stored copy rather than fetched from YouTube just now |
+| `fetched_at` | ISO 8601 time it was fetched from YouTube |
+
+### Batch: many videos at once
+
+Queue up to 100 videos in one call; transcripts are fetched in the background. Submitting is free, each video that returns a transcript costs 1 credit, and failed videos are never charged (10 videos where 2 have no captions = 8 credits).
+
+```ts
+const { batch_id } = await client.createBatch({ videos: ["jNQXAC9IVRw", "https://youtu.be/dQw4w9WgXcQ"] });
+const result = await client.waitForBatch(batch_id); // polls, then collects every page
+
+for (const item of result.items ?? []) {
+  if (item.status === "succeeded") console.log(item.video_id, item.caption_type, item.transcript?.slice(0, 80));
+  else console.log(item.video_id, "failed:", item.error_code); // e.g. TRANSCRIPT_DISABLED
+}
+console.log("credits used:", result.credits_charged);
+```
+
+`getBatch({ id, offset, limit })` returns the status and one page if you'd rather poll yourself. Pass `idempotencyKey` to `createBatch` so a retried call returns the same batch instead of queuing a second one. Batches are kept for 7 days, and an account can have 5 unfinished batches at a time.
+
+To be notified instead of polling, pass `webhookUrl` (public https). The response includes a `webhook_secret` (shown once); each delivery is signed, so check it against the raw body before trusting it:
+
+```ts
+import { verifyWebhookSignature } from "@tubeagentkit/getyoutubetranscript";
+
+// e.g. a Next.js route handler
+export async function POST(request: Request) {
+  const body = await request.text(); // raw body, not re-serialized JSON
+  if (!(await verifyWebhookSignature(body, request.headers.get("x-gyt-signature"), process.env.GYT_WEBHOOK_SECRET!))) {
+    return new Response("invalid signature", { status: 401 });
+  }
+  const event = JSON.parse(body); // { event: "batch.completed", batch_id, results_url, ... }
+  return new Response("ok");
+}
+```
+
 ## Getting an API key
 
 Every request needs an API key. New accounts get **100 free credits, no card required** - grab one at [getyoutubetranscript.com](https://getyoutubetranscript.com).
@@ -120,6 +163,8 @@ try {
 | Method | Endpoint | Credits |
 | --- | --- | --- |
 | `getTranscript(params)` | `GET /transcript` (optional `timestamps: true`) | 1 |
+| `createBatch(params)` | `POST /batch` (up to 100 videos) | 1 per successful video |
+| `getBatch(params)` / `waitForBatch(id)` | `GET /batch` | free |
 | `search(params)` | `GET /search` | 1 |
 | `resolveChannel(params)` | `GET /resolve` | free |
 | `getPlaylist(params)` | `GET /playlist` | 1 |

@@ -1,12 +1,20 @@
 export { GetYouTubeTranscript, signup, verifySignup } from "./client.js";
 export { GetYouTubeTranscriptError } from "./errors.js";
+export { verifyWebhookSignature } from "./webhooks.js";
+export type { VerifyWebhookOptions } from "./webhooks.js";
 export type {
   ApiErrorBody,
   ApiSuccessBody,
+  BatchData,
+  BatchItem,
+  BatchStatus,
+  CaptionType,
   ChannelLatestData,
   ChannelResult,
   ChannelVideo,
   ChannelVideosData,
+  CreateBatchParams,
+  GetBatchParams,
   GetChannelLatestParams,
   GetPlaylistParams,
   GetTranscriptParams,
@@ -23,6 +31,8 @@ export type {
   SearchPagination,
   SignupResponse,
   TranscriptData,
+  TranscriptFields,
   VerifySignupResponse,
   VideoResult,
+  WaitForBatchOptions,
 } from "./types.js";

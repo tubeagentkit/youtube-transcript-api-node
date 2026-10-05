@@ -46,17 +46,106 @@ export interface Segment {
   text: string;
 }
 
-export interface TranscriptData {
+/** `manual` = uploaded by the creator, `auto` = YouTube speech recognition, `null` = unknown (older transcripts). */
+export type CaptionType = "manual" | "auto" | null;
+
+/** Fields shared by a transcript and a succeeded batch item. */
+export interface TranscriptFields {
   video_id: string;
+  /** The caption track actually returned. */
   language_code: string;
+  /** What was asked for. Differs from `language_code` when YouTube didn't have that language. */
+  requested_language: string;
+  caption_type: CaptionType;
   title: string;
   author_name: string;
   author_url: string;
   thumbnail_url: string;
   transcript: string;
   word_count: number;
+  /** ISO 8601 time the transcript was fetched from YouTube. */
+  fetched_at: string | null;
   /** Per-line timing. Present only when the request set `timestamps: true`. */
   segments?: Segment[];
+}
+
+export interface TranscriptData extends TranscriptFields {
+  /** `true` when served from the stored copy rather than fetched from YouTube just now. */
+  cached: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// POST /batch, GET /batch
+// ---------------------------------------------------------------------------
+
+export interface CreateBatchParams {
+  /** 1-100 video URLs or 11-character IDs. Duplicates are fetched once. */
+  videos: string[];
+  /** Caption language code for every video. Defaults to 'en'. */
+  language?: string;
+  /** Include per-line `segments` in the results. */
+  timestamps?: boolean;
+  /** Public https URL (port 443) that receives a signed `batch.completed` POST. See `verifyWebhookSignature`. */
+  webhookUrl?: string;
+  /** Sent as the `Idempotency-Key` header: a retry with the same key returns the original batch. */
+  idempotencyKey?: string;
+}
+
+export interface GetBatchParams {
+  /** The `batch_id` from `createBatch`. */
+  id: string;
+  /** Items to skip. Defaults to 0. */
+  offset?: number;
+  /** Items per page, 1-50. Defaults to 20. */
+  limit?: number;
+}
+
+export interface WaitForBatchOptions {
+  /** Milliseconds between status checks. Defaults to 3000. */
+  pollIntervalMs?: number;
+  /** Give up after this many milliseconds. Defaults to 900000 (15 minutes). */
+  timeoutMs?: number;
+  /** Items fetched per request once complete, 1-50. Defaults to 50. */
+  pageSize?: number;
+}
+
+export type BatchStatus = "queued" | "processing" | "completed";
+
+/** One video in a batch: succeeded items carry the transcript fields, failed ones an `error_code`. */
+export interface BatchItem extends Partial<TranscriptFields> {
+  /** Index in the submitted `videos` list (after de-duplication). */
+  position: number;
+  video_id: string;
+  status: "pending" | "succeeded" | "failed";
+  /** `true` when this video used a credit. */
+  charged: boolean;
+  /** e.g. `TRANSCRIPT_DISABLED`, `VIDEO_UNAVAILABLE`, `PAYMENT_REQUIRED`. */
+  error_code?: string;
+}
+
+export interface BatchData {
+  batch_id: string;
+  status: BatchStatus;
+  language: string;
+  timestamps: boolean;
+  total: number;
+  succeeded: number;
+  failed: number;
+  pending: number;
+  webhook_status: "none" | "pending" | "delivered" | "failed";
+  created_at: string;
+  completed_at: string | null;
+  results_url: string;
+  /** `createBatch` only, and only when `webhookUrl` was given. Shown once. */
+  webhook_secret?: string;
+  /** `createBatch`: `true` when the Idempotency-Key matched an earlier batch. */
+  idempotent_replay?: boolean;
+  /** `getBatch` / `waitForBatch`. */
+  credits_charged?: number;
+  /** `getBatch`: one page. `waitForBatch`: every item. */
+  items?: BatchItem[];
+  /** `getBatch`: offset of the next page, `null` on the last one. */
+  next_offset?: number | null;
 }
 
 // ---------------------------------------------------------------------------

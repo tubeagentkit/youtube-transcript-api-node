@@ -2,7 +2,12 @@ import { GetYouTubeTranscriptError } from "./errors.js";
 import type {
   ApiErrorBody,
   ApiSuccessBody,
+  BatchData,
+  BatchItem,
   ChannelLatestData,
+  CreateBatchParams,
+  GetBatchParams,
+  WaitForBatchOptions,
   ChannelVideosData,
   CreditsData,
   GetChannelLatestParams,
@@ -124,6 +129,19 @@ export class GetYouTubeTranscript {
     });
   }
 
+  private post<T>(path: string, body: Record<string, unknown>, extraHeaders: Record<string, string> = {}): Promise<T> {
+    return request<T>(this.fetchImpl, `${this.baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        ...extraHeaders,
+      },
+      // JSON.stringify drops undefined values, so unset options are omitted.
+      body: JSON.stringify(body),
+    });
+  }
+
   /**
    * Full transcript for one video, plus title/author/thumbnail metadata. 1 credit.
    * Pass `timestamps: true` to also get per-line `segments` (same credit).
@@ -134,6 +152,57 @@ export class GetYouTubeTranscript {
       language: params.language,
       timestamps: params.timestamps ? true : undefined,
     });
+  }
+
+  /**
+   * Queue transcripts for up to 100 videos in one call. Free to submit:
+   * 1 credit per video that returns a transcript, failed videos are never
+   * charged. Follow with `waitForBatch` (or `getBatch`), or pass
+   * `webhookUrl` to be notified.
+   */
+  createBatch(params: CreateBatchParams): Promise<BatchData> {
+    if (!params?.videos?.length) {
+      return Promise.reject(new Error("GetYouTubeTranscript.createBatch: `videos` must contain at least one video"));
+    }
+    return this.post<BatchData>(
+      "/batch",
+      {
+        videos: params.videos,
+        language: params.language,
+        timestamps: params.timestamps ? true : undefined,
+        webhook_url: params.webhookUrl,
+      },
+      params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {},
+    );
+  }
+
+  /** A batch's status and one page of results, in submission order. Free. */
+  getBatch(params: GetBatchParams): Promise<BatchData> {
+    return this.get<BatchData>("/batch", { id: params.id, offset: params.offset, limit: params.limit });
+  }
+
+  /** Poll until a batch completes, then return it with every item. Free. */
+  async waitForBatch(id: string, options: WaitForBatchOptions = {}): Promise<BatchData> {
+    const { pollIntervalMs = 3000, timeoutMs = 900_000, pageSize = 50 } = options;
+    const deadline = Date.now() + timeoutMs;
+
+    let batch = await this.getBatch({ id, limit: 1 });
+    while (batch.status !== "completed") {
+      if (Date.now() >= deadline) {
+        throw new Error(`GetYouTubeTranscript.waitForBatch: batch ${id} not completed after ${timeoutMs} ms (${batch.pending} pending)`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+      batch = await this.getBatch({ id, limit: 1 });
+    }
+
+    const items: BatchItem[] = [];
+    let offset: number | null | undefined = 0;
+    while (offset !== null && offset !== undefined) {
+      batch = await this.getBatch({ id, offset, limit: pageSize });
+      items.push(...(batch.items ?? []));
+      offset = batch.next_offset;
+    }
+    return { ...batch, items, next_offset: null };
   }
 
   /**

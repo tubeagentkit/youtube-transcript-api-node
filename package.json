@@ -1,6 +1,6 @@
 {
   "name": "@tubeagentkit/getyoutubetranscript",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "YouTube transcript API for Node.js and TypeScript: get YouTube video transcripts, captions and subtitles with timestamps, search YouTube, and list channel and playlist videos. No proxies or headless browser.",
   "type": "module",
   "main": "./dist/index.cjs",

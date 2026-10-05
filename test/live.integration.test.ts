@@ -49,8 +49,29 @@ describe.skipIf(!apiKey)("live integration", () => {
       const data = await client.getTranscript({ v: "jNQXAC9IVRw" });
       expect(data.video_id).toBe("jNQXAC9IVRw");
       expect(data.transcript.length).toBeGreaterThan(0);
+      expect(data.requested_language).toBe("en");
+      expect(["manual", "auto", null]).toContain(data.caption_type);
+      expect(typeof data.cached).toBe("boolean");
+      expect(data.fetched_at).toBeTruthy();
     },
     20_000,
+  );
+
+  it.skipIf(!runPaid)(
+    "batch charges only the video that succeeds (1 credit)",
+    async () => {
+      const created = await client.createBatch({ videos: ["jNQXAC9IVRw", "aaaaaaaaaaa"] });
+      expect(created.total).toBe(2);
+
+      const done = await client.waitForBatch(created.batch_id, { pollIntervalMs: 2000, timeoutMs: 120_000 });
+      const byVideo = Object.fromEntries((done.items ?? []).map((item) => [item.video_id, item]));
+      expect(byVideo.jNQXAC9IVRw.status).toBe("succeeded");
+      expect(byVideo.jNQXAC9IVRw.transcript).toBeTruthy();
+      expect(byVideo.aaaaaaaaaaa.status).toBe("failed");
+      expect(byVideo.aaaaaaaaaaa.charged).toBe(false);
+      expect(done.credits_charged).toBe(1);
+    },
+    150_000,
   );
 
   it.skipIf(!runPaid)(
