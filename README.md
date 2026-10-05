@@ -58,6 +58,15 @@ Each segment is `{ start, duration, text }` with `start` and `duration` in secon
 | `cached` | `true` when served from the stored copy rather than fetched from YouTube just now |
 | `fetched_at` | ISO 8601 time it was fetched from YouTube |
 
+Not sure which languages a video has? `getTranscriptLanguages` lists them for free, before you spend a credit:
+
+```ts
+const { default_language_code, languages } = await client.getTranscriptLanguages({ v: "kJQP7kiw5Fk" });
+for (const lang of languages) console.log(lang.language_code, lang.caption_type, lang.name); // "es manual Spanish"
+```
+
+An empty `languages` list means the video has captions turned off.
+
 ### Batch: many videos at once
 
 Queue up to 100 videos in one call; transcripts are fetched in the background. Submitting is free, each video that returns a transcript costs 1 credit, and failed videos are never charged (10 videos where 2 have no captions = 8 credits).
@@ -163,6 +172,7 @@ try {
 | Method | Endpoint | Credits |
 | --- | --- | --- |
 | `getTranscript(params)` | `GET /transcript` (optional `timestamps: true`) | 1 |
+| `getTranscriptLanguages(params)` | `GET /transcript/languages` | free |
 | `createBatch(params)` | `POST /batch` (up to 100 videos) | 1 per successful video |
 | `getBatch(params)` / `waitForBatch(id)` | `GET /batch` | free |
 | `search(params)` | `GET /search` | 1 |

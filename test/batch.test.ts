@@ -21,6 +21,13 @@ describe("batch methods", () => {
     client = new GetYouTubeTranscript({ apiKey: "sk_live_test123", fetch: fetchMock as unknown as typeof fetch });
   });
 
+  it("getTranscriptLanguages sends the video param", async () => {
+    const data = { video_id: "kJQP7kiw5Fk", default_language_code: "en", languages: [{ language_code: "en", name: "English", caption_type: "manual" }] };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+    expect(await client.getTranscriptLanguages({ v: "https://youtu.be/kJQP7kiw5Fk" })).toEqual(data);
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/transcript/languages?v=https%3A%2F%2Fyoutu.be%2FkJQP7kiw5Fk`);
+  });
+
   it("createBatch POSTs a JSON body with the Idempotency-Key header", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(202, batch("queued", { webhook_secret: "whsec_x" })));
     const result = await client.createBatch({

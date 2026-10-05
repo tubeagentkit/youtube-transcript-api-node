@@ -36,6 +36,12 @@ describe.skipIf(!apiKey)("live integration", () => {
     20_000,
   );
 
+  it("getTranscriptLanguages lists caption languages (free)", async () => {
+    const data = await client.getTranscriptLanguages({ v: "jNQXAC9IVRw" });
+    expect(data.languages.length).toBeGreaterThan(0);
+    expect(data.languages.map((lang) => lang.language_code)).toContain(data.default_language_code);
+  }, 20_000);
+
   it("getCredits returns the key's plan and balance (free)", async () => {
     const data = await client.getCredits();
     expect(typeof data.plan_credits_left).toBe("number");

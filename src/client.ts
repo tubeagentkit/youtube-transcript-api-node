@@ -12,6 +12,7 @@ import type {
   CreditsData,
   GetChannelLatestParams,
   GetPlaylistParams,
+  GetTranscriptLanguagesParams,
   GetTranscriptParams,
   GetYouTubeTranscriptOptions,
   ListChannelVideosParams,
@@ -23,6 +24,7 @@ import type {
   SearchParams,
   SignupResponse,
   TranscriptData,
+  TranscriptLanguagesData,
   VerifySignupResponse,
 } from "./types.js";
 
@@ -152,6 +154,14 @@ export class GetYouTubeTranscript {
       language: params.language,
       timestamps: params.timestamps ? true : undefined,
     });
+  }
+
+  /**
+   * The caption languages a video offers (manual and auto-generated), before
+   * fetching one. Free. An empty `languages` list means captions are turned off.
+   */
+  getTranscriptLanguages(params: GetTranscriptLanguagesParams): Promise<TranscriptLanguagesData> {
+    return this.get<TranscriptLanguagesData>("/transcript/languages", { v: params.v });
   }
 
   /**

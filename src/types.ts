@@ -75,6 +75,30 @@ export interface TranscriptData extends TranscriptFields {
 }
 
 // ---------------------------------------------------------------------------
+// GET /transcript/languages (free)
+// ---------------------------------------------------------------------------
+
+export interface GetTranscriptLanguagesParams {
+  /** YouTube video URL (full or short) or an 11-character video ID. */
+  v: string;
+}
+
+export interface TranscriptLanguage {
+  language_code: string;
+  /** YouTube's display name, e.g. "English (auto-generated)". */
+  name: string;
+  caption_type: "manual" | "auto";
+}
+
+export interface TranscriptLanguagesData {
+  video_id: string;
+  /** What `getTranscript` returns with no `language`; `null` when the video has no captions. */
+  default_language_code: string | null;
+  /** One per language and caption type. Empty when the video has captions turned off. */
+  languages: TranscriptLanguage[];
+}
+
+// ---------------------------------------------------------------------------
 // POST /batch, GET /batch
 // ---------------------------------------------------------------------------
 
