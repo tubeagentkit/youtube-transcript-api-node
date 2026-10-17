@@ -122,13 +122,13 @@ Every method returns the parsed `data` payload directly - no need to unwrap `{ s
 // Search videos or channels
 const results = await client.search({ q: "lofi beats" });
 
-// Resolve a channel handle to its channel ID (free)
+// Resolve a channel handle to its channel ID (1 credit)
 const { channel_id } = await client.resolveChannel({ handle: "@mkbhd" });
 
 // List a playlist's videos
 const playlist = await client.getPlaylist({ list: "PLillGF-RfqbYE6Ik_EuXA2iZFcE082B3s" });
 
-// Channel metadata + latest uploads (free)
+// Channel metadata + latest uploads (1 credit)
 const channel = await client.getChannelLatest({ channel: "@mkbhd" });
 
 // Search within a channel
@@ -176,9 +176,9 @@ try {
 | `createBatch(params)` | `POST /batch` (up to 100 videos) | 1 per successful video |
 | `getBatch(params)` / `waitForBatch(id)` | `GET /batch` | free |
 | `search(params)` | `GET /search` | 1 |
-| `resolveChannel(params)` | `GET /resolve` | free |
+| `resolveChannel(params)` | `GET /resolve` | 1 credit |
 | `getPlaylist(params)` | `GET /playlist` | 1 |
-| `getChannelLatest(params)` | `GET /channel/latest` | free |
+| `getChannelLatest(params)` | `GET /channel/latest` | 1 credit |
 | `searchChannel(params)` | `GET /channel/search` | 1 |
 | `listChannelVideos(params)` | `GET /channel/videos` | 1 |
 | `getCredits()` | `GET /credits` | free |

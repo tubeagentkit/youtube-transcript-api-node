@@ -6,10 +6,9 @@
  *
  *   GYT_API_KEY=sk_live_... npm run test:live
  *
- * Prefers the two free endpoints (`resolveChannel`, `getChannelLatest`)
- * so repeated runs don't burn credits. Paid endpoints are each hit once,
- * only when explicitly opted into via GYT_RUN_PAID_TESTS=1, to respect
- * shared credit budgets in CI or shared test keys.
+ * Only `getCredits` is free. Every other endpoint costs credits, so each is
+ * hit once, and only when explicitly opted into via GYT_RUN_PAID_TESTS=1, to
+ * respect shared credit budgets in CI or shared test keys.
  */
 import { describe, expect, it } from "vitest";
 import { GetYouTubeTranscript } from "../src/index.js";
@@ -20,14 +19,14 @@ const runPaid = process.env.GYT_RUN_PAID_TESTS === "1";
 describe.skipIf(!apiKey)("live integration", () => {
   const client = new GetYouTubeTranscript({ apiKey: apiKey ?? "" });
 
-  it("resolveChannel resolves a well-known handle (free)", async () => {
+  it.skipIf(!runPaid)("resolveChannel resolves a well-known handle (1 credit)", async () => {
     const data = await client.resolveChannel({ handle: "@mkbhd" });
     expect(data.channel_id).toMatch(/^UC/);
     expect(typeof data.title).toBe("string");
   });
 
-  it(
-    "getChannelLatest returns channel metadata (free)",
+  it.skipIf(!runPaid)(
+    "getChannelLatest returns channel metadata (1 credit)",
     async () => {
       const data = await client.getChannelLatest({ channel: "@mkbhd" });
       expect(data).toBeTruthy();
@@ -36,7 +35,7 @@ describe.skipIf(!apiKey)("live integration", () => {
     20_000,
   );
 
-  it("getTranscriptLanguages lists caption languages (1 credit)", async () => {
+  it.skipIf(!runPaid)("getTranscriptLanguages lists caption languages (1 credit)", async () => {
     const data = await client.getTranscriptLanguages({ v: "jNQXAC9IVRw" });
     expect(data.languages.length).toBeGreaterThan(0);
     expect(data.languages.map((lang) => lang.language_code)).toContain(data.default_language_code);

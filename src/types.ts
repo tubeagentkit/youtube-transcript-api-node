@@ -225,7 +225,7 @@ export interface SearchData {
 }
 
 // ---------------------------------------------------------------------------
-// GET /resolve (free)
+// GET /resolve (1 credit)
 // ---------------------------------------------------------------------------
 
 export interface ResolveChannelParams {
@@ -273,7 +273,7 @@ export interface PlaylistData {
 }
 
 // ---------------------------------------------------------------------------
-// GET /channel/latest (free)
+// GET /channel/latest (1 credit)
 // ---------------------------------------------------------------------------
 
 export interface GetChannelLatestParams {

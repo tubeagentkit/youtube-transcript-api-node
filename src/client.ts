@@ -231,7 +231,7 @@ export class GetYouTubeTranscript {
     });
   }
 
-  /** Resolve a channel @handle, URL, or UC... id to its channel ID. Free. */
+  /** Resolve a channel @handle, URL, or UC... id to its channel ID. Costs 1 credit. */
   resolveChannel(params: ResolveChannelParams): Promise<ResolveChannelData> {
     return this.get<ResolveChannelData>("/resolve", { handle: params.handle });
   }
@@ -247,7 +247,7 @@ export class GetYouTubeTranscript {
     });
   }
 
-  /** Channel metadata plus its latest uploads. Free. */
+  /** Channel metadata plus its latest uploads. Costs 1 credit. */
   getChannelLatest(params: GetChannelLatestParams): Promise<ChannelLatestData> {
     return this.get<ChannelLatestData>("/channel/latest", { channel: params.channel });
   }
