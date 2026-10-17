@@ -75,7 +75,7 @@ export interface TranscriptData extends TranscriptFields {
 }
 
 // ---------------------------------------------------------------------------
-// GET /transcript/languages (free)
+// GET /transcript/languages (1 credit)
 // ---------------------------------------------------------------------------
 
 export interface GetTranscriptLanguagesParams {

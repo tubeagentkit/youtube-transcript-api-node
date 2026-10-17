@@ -58,7 +58,7 @@ Each segment is `{ start, duration, text }` with `start` and `duration` in secon
 | `cached` | `true` when served from the stored copy rather than fetched from YouTube just now |
 | `fetched_at` | ISO 8601 time it was fetched from YouTube |
 
-Not sure which languages a video has? `getTranscriptLanguages` lists them for free, before you spend a credit:
+Not sure which languages a video has? `getTranscriptLanguages` lists them (1 credit per call) before you fetch a transcript:
 
 ```ts
 const { default_language_code, languages } = await client.getTranscriptLanguages({ v: "kJQP7kiw5Fk" });
@@ -172,7 +172,7 @@ try {
 | Method | Endpoint | Credits |
 | --- | --- | --- |
 | `getTranscript(params)` | `GET /transcript` (optional `timestamps: true`) | 1 |
-| `getTranscriptLanguages(params)` | `GET /transcript/languages` | free |
+| `getTranscriptLanguages(params)` | `GET /transcript/languages` | 1 credit |
 | `createBatch(params)` | `POST /batch` (up to 100 videos) | 1 per successful video |
 | `getBatch(params)` / `waitForBatch(id)` | `GET /batch` | free |
 | `search(params)` | `GET /search` | 1 |

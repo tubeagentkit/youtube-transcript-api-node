@@ -158,7 +158,7 @@ export class GetYouTubeTranscript {
 
   /**
    * The caption languages a video offers (manual and auto-generated), before
-   * fetching one. Free. An empty `languages` list means captions are turned off.
+   * fetching one. Costs 1 credit. An empty `languages` list means captions are turned off.
    */
   getTranscriptLanguages(params: GetTranscriptLanguagesParams): Promise<TranscriptLanguagesData> {
     return this.get<TranscriptLanguagesData>("/transcript/languages", { v: params.v });
