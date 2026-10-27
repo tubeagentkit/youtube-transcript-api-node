@@ -183,6 +183,135 @@ describe("GetYouTubeTranscript request construction", () => {
   });
 });
 
+describe("channel and video endpoints: playlists, posts, banner, related, dislikes", () => {
+  const BASE = "https://getyoutubetranscript.com/api/v1";
+  let fetchMock: ReturnType<typeof vi.fn>;
+  let client: GetYouTubeTranscript;
+
+  const calledUrl = (index = 0) => fetchMock.mock.calls[index][0] as string;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    client = new GetYouTubeTranscript({ apiKey: "sk_live_test123", fetch: fetchMock as unknown as typeof fetch });
+  });
+
+  describe("listChannelVideos tab and sort", () => {
+    beforeEach(() => {
+      fetchMock.mockImplementation(async () => jsonResponse(200, { success: true, data: { videos: [], has_more: false } }));
+    });
+
+    it("sends tab and sort on a first page", async () => {
+      await client.listChannelVideos({ channel: "@mkbhd", tab: "shorts", sort: "popular" });
+      expect(calledUrl()).toBe(`${BASE}/channel/videos?channel=%40mkbhd&tab=shorts&sort=popular`);
+    });
+
+    it("accepts the streams tab and the oldest sort", async () => {
+      await client.listChannelVideos({ channel: "@mkbhd", tab: "streams", sort: "oldest" });
+      expect(calledUrl()).toBe(`${BASE}/channel/videos?channel=%40mkbhd&tab=streams&sort=oldest`);
+    });
+
+    it("sends neither when they are not set", async () => {
+      await client.listChannelVideos({ channel: "@mkbhd" });
+      expect(calledUrl()).toBe(`${BASE}/channel/videos?channel=%40mkbhd`);
+    });
+
+    it("drops tab and sort when a continuation is given", async () => {
+      await client.listChannelVideos({ continuation: "c_abc", tab: "shorts", sort: "popular" });
+      expect(calledUrl()).toBe(`${BASE}/channel/videos?continuation=c_abc`);
+    });
+  });
+
+  describe.each([
+    ["listChannelPlaylists", "/channel/playlists", "playlists", { id: "PL1", title: "Retro Tech", video_count: 5 }],
+    ["listChannelPosts", "/channel/posts", "posts", { id: "Ugk1", text: "hello", links: ["https://example.com"], likes: "12K" }],
+  ] as const)("%s", (method, path, listKey, item) => {
+    it("builds the URL for a first page and passes the response through", async () => {
+      const data = { [listKey]: [item], has_more: true, continuation_token: "c_next" };
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+      const result = await client[method]({ channel: "@mkbhd" });
+
+      expect(calledUrl()).toBe(`${BASE}${path}?channel=%40mkbhd`);
+      expect(fetchMock.mock.calls[0][1].method).toBe("GET");
+      expect(result).toEqual(data);
+    });
+
+    it("builds the URL for a continuation page", async () => {
+      fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data: { [listKey]: [], has_more: false, continuation_token: null } }));
+
+      const result = await client[method]({ continuation: "c_next" });
+
+      expect(calledUrl()).toBe(`${BASE}${path}?continuation=c_next`);
+      expect(result.continuation_token).toBeNull();
+    });
+
+    it("surfaces the API's 400 when neither channel nor continuation is given", async () => {
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse(400, { success: false, code: "MISSING_CHANNEL", message: "Provide channel or continuation." }),
+      );
+
+      await expect(client[method]({})).rejects.toMatchObject({ statusCode: 400, code: "MISSING_CHANNEL" });
+      expect(calledUrl()).toBe(`${BASE}${path}`);
+    });
+  });
+
+  it("getChannelBanner builds the URL and passes the response through", async () => {
+    const data = {
+      channel_id: "UC1",
+      handle: "@mkbhd",
+      title: "MKBHD",
+      avatar: "https://example.com/a=s900",
+      has_banner: true,
+      banner: { original: "o", largest: "l", sizes: [{ url: "u", width: 1060, height: 175 }] },
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getChannelBanner({ channel: "@mkbhd" });
+
+    expect(calledUrl()).toBe(`${BASE}/channel/banner?channel=%40mkbhd`);
+    expect(result).toEqual(data);
+  });
+
+  it("getChannelBanner returns has_banner false without a banner object", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data: { channel_id: "UC1", has_banner: false } }));
+
+    const result = await client.getChannelBanner({ channel: "UC1" });
+
+    expect(result.has_banner).toBe(false);
+    expect(result.banner).toBeUndefined();
+  });
+
+  it("getRelatedVideos builds the URL and passes the response through", async () => {
+    const data = {
+      video_id: "dQw4w9WgXcQ",
+      related: [{ position: 1, id: "C6Vwl8bD33s", title: "t", channel: { name: "c" }, views: "1M views", length: "1:01:35" }],
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getRelatedVideos({ v: "dQw4w9WgXcQ" });
+
+    expect(calledUrl()).toBe(`${BASE}/video/related?v=dQw4w9WgXcQ`);
+    expect(result).toEqual(data);
+  });
+
+  it("getVideoDislikes URL-encodes a full video URL and passes the response through", async () => {
+    const data = { video_id: "dQw4w9WgXcQ", likes: 10, dislikes: 2, rating: 4.7, view_count: 100, deleted: false, estimated: true, source: "s" };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getVideoDislikes({ v: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" });
+
+    expect(calledUrl()).toBe(`${BASE}/video/dislikes?v=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ`);
+    expect(result).toEqual(data);
+    expect(result.estimated).toBe(true);
+  });
+
+  it("surfaces a 404 from a video endpoint as GetYouTubeTranscriptError", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(404, { success: false, code: "VIDEO_NOT_FOUND", message: "Video not found." }));
+
+    await expect(client.getRelatedVideos({ v: "aaaaaaaaaaa" })).rejects.toBeInstanceOf(GetYouTubeTranscriptError);
+  });
+});
+
 describe("GetYouTubeTranscript error handling", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   let client: GetYouTubeTranscript;

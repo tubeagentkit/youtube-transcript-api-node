@@ -4,19 +4,29 @@ import type {
   ApiSuccessBody,
   BatchData,
   BatchItem,
+  ChannelBannerData,
   ChannelLatestData,
+  ChannelPageParams,
+  ChannelPlaylistsData,
+  ChannelPostsData,
   CreateBatchParams,
   GetBatchParams,
   WaitForBatchOptions,
   ChannelVideosData,
   CreditsData,
+  GetChannelBannerParams,
   GetChannelLatestParams,
   GetPlaylistParams,
+  GetRelatedVideosParams,
   GetTranscriptLanguagesParams,
   GetTranscriptParams,
+  GetVideoDislikesParams,
   GetYouTubeTranscriptOptions,
+  ListChannelPlaylistsParams,
+  ListChannelPostsParams,
   ListChannelVideosParams,
   PlaylistData,
+  RelatedVideosData,
   ResolveChannelData,
   ResolveChannelParams,
   SearchChannelParams,
@@ -26,6 +36,7 @@ import type {
   TranscriptData,
   TranscriptLanguagesData,
   VerifySignupResponse,
+  VideoDislikesData,
 } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://getyoutubetranscript.com/api/v1";
@@ -265,14 +276,68 @@ export class GetYouTubeTranscript {
   }
 
   /**
-   * List all of a channel's uploads. Provide `channel` for a first page,
-   * or `continuation` to continue. 1 credit.
+   * A paged channel list. Options in `firstPageOnly` are dropped once a
+   * `continuation` is given, because the token already carries them.
    */
-  listChannelVideos(params: ListChannelVideosParams): Promise<ChannelVideosData> {
-    return this.get<ChannelVideosData>("/channel/videos", {
+  private getChannelPage<T>(
+    path: string,
+    params: ChannelPageParams,
+    firstPageOnly: Record<string, QueryValue> = {},
+  ): Promise<T> {
+    return this.get<T>(path, {
       channel: params.channel,
       continuation: params.continuation,
+      ...(params.continuation ? {} : firstPageOnly),
     });
+  }
+
+  /**
+   * List a channel's uploads. Provide `channel` for a first page, or
+   * `continuation` to continue. `tab` ('videos', 'shorts' or 'streams') and
+   * `sort` ('latest', 'popular' or 'oldest') apply to a first page only.
+   * 1 credit.
+   */
+  listChannelVideos(params: ListChannelVideosParams): Promise<ChannelVideosData> {
+    return this.getChannelPage<ChannelVideosData>("/channel/videos", params, {
+      tab: params.tab,
+      sort: params.sort,
+    });
+  }
+
+  /**
+   * List a channel's playlists. Provide `channel` for a first page, or
+   * `continuation` to continue. Pass a playlist's `id` to `getPlaylist` for
+   * its videos. 1 credit.
+   */
+  listChannelPlaylists(params: ListChannelPlaylistsParams): Promise<ChannelPlaylistsData> {
+    return this.getChannelPage<ChannelPlaylistsData>("/channel/playlists", params);
+  }
+
+  /**
+   * List a channel's community posts. Provide `channel` for a first page, or
+   * `continuation` to continue. 1 credit.
+   */
+  listChannelPosts(params: ListChannelPostsParams): Promise<ChannelPostsData> {
+    return this.getChannelPage<ChannelPostsData>("/channel/posts", params);
+  }
+
+  /** A channel's banner (original, largest and every crop size) and avatar. 1 credit. */
+  getChannelBanner(params: GetChannelBannerParams): Promise<ChannelBannerData> {
+    return this.get<ChannelBannerData>("/channel/banner", { channel: params.channel });
+  }
+
+  /** The videos YouTube suggests next to a video. 1 credit. */
+  getRelatedVideos(params: GetRelatedVideosParams): Promise<RelatedVideosData> {
+    return this.get<RelatedVideosData>("/video/related", { v: params.v });
+  }
+
+  /**
+   * Estimated likes and dislikes for a video. YouTube no longer publishes
+   * dislikes, so the numbers are estimates (`estimated` is always `true`).
+   * 1 credit.
+   */
+  getVideoDislikes(params: GetVideoDislikesParams): Promise<VideoDislikesData> {
+    return this.get<VideoDislikesData>("/video/dislikes", { v: params.v });
   }
 
   /** Remaining credit balance, plan, and rate limit for this key. Free. */

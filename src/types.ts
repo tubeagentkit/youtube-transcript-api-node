@@ -320,11 +320,166 @@ export interface ChannelVideosData {
 // GET /channel/videos
 // ---------------------------------------------------------------------------
 
-export interface ListChannelVideosParams {
+/** Shared by the paged channel lists: `channel` for a first page, `continuation` for the next. */
+export interface ChannelPageParams {
   /** Channel @handle, URL, or UC... id. Required unless `continuation` is set. */
   channel?: string;
   /** Opaque continuation token from a previous response. */
   continuation?: string;
+}
+
+/** `streams` is the channel's Live tab. */
+export type ChannelVideosTab = "videos" | "shorts" | "streams";
+
+export type ChannelVideosSort = "latest" | "popular" | "oldest";
+
+export interface ListChannelVideosParams extends ChannelPageParams {
+  /** Which list to read. Defaults to 'videos'. First page only: a continuation already carries it. */
+  tab?: ChannelVideosTab;
+  /** Order of the list. Defaults to 'latest'. First page only: a continuation already carries it. */
+  sort?: ChannelVideosSort;
+}
+
+// ---------------------------------------------------------------------------
+// GET /channel/playlists (1 credit)
+// ---------------------------------------------------------------------------
+
+export type ListChannelPlaylistsParams = ChannelPageParams;
+
+export interface ChannelPlaylist {
+  position?: number;
+  /** Pass to `getPlaylist` as `list` to read its videos. */
+  id: string;
+  title: string;
+  link?: string;
+  type?: string;
+  video_count_text?: string;
+  video_count?: number;
+  thumbnail?: string;
+  [key: string]: unknown;
+}
+
+export interface ChannelPlaylistsData {
+  playlists: ChannelPlaylist[];
+  has_more: boolean;
+  continuation_token?: string | null;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// GET /channel/posts (1 credit)
+// ---------------------------------------------------------------------------
+
+export type ListChannelPostsParams = ChannelPageParams;
+
+export interface ChannelPost {
+  position?: number;
+  id: string;
+  url?: string;
+  text?: string;
+  links?: string[];
+  published_time?: string;
+  /** As shown by YouTube, e.g. "12K". */
+  likes?: string;
+  comments?: string;
+  /** The post's image, video or poll, when it has one. */
+  attachment?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface ChannelPostsData {
+  posts: ChannelPost[];
+  has_more: boolean;
+  continuation_token?: string | null;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// GET /channel/banner (1 credit)
+// ---------------------------------------------------------------------------
+
+export interface GetChannelBannerParams {
+  /** Channel @handle, URL, or UC... id. */
+  channel: string;
+}
+
+export interface ChannelBannerSize {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface ChannelBannerData {
+  channel_id: string;
+  handle?: string;
+  title?: string;
+  avatar?: string;
+  /** `false` for a channel with no banner; `banner` is then absent. */
+  has_banner: boolean;
+  banner?: {
+    original?: string;
+    largest?: string;
+    sizes?: ChannelBannerSize[];
+  };
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// GET /video/related (1 credit)
+// ---------------------------------------------------------------------------
+
+export interface GetRelatedVideosParams {
+  /** YouTube video URL (full or short) or an 11-character video ID. */
+  v: string;
+}
+
+export interface RelatedVideo {
+  position?: number;
+  id: string;
+  title: string;
+  link?: string;
+  channel?: {
+    name?: string;
+    [key: string]: unknown;
+  };
+  views?: string;
+  published_time?: string;
+  length?: string;
+  thumbnail?: string;
+  [key: string]: unknown;
+}
+
+export interface RelatedVideosData {
+  video_id: string;
+  related: RelatedVideo[];
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// GET /video/dislikes (1 credit)
+// ---------------------------------------------------------------------------
+
+export interface GetVideoDislikesParams {
+  /** YouTube video URL (full or short) or an 11-character video ID. */
+  v: string;
+}
+
+/** YouTube no longer publishes dislikes, so every number here is an estimate. */
+export interface VideoDislikesData {
+  video_id: string;
+  likes: number;
+  dislikes: number;
+  /** Estimated star rating out of 5. */
+  rating?: number;
+  view_count?: number;
+  /** Likes and dislikes as reported by the estimate source's own users. */
+  raw_likes?: number;
+  raw_dislikes?: number;
+  deleted?: boolean;
+  /** Always `true`. */
+  estimated: boolean;
+  source?: string;
+  [key: string]: unknown;
 }
 
 // ---------------------------------------------------------------------------

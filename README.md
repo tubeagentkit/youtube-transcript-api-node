@@ -137,11 +137,30 @@ const channelResults = await client.searchChannel({ channel: "@mkbhd", q: "iphon
 // List all of a channel's uploads
 const uploads = await client.listChannelVideos({ channel: "@mkbhd" });
 
+// Shorts or live streams instead, most popular first (first page only)
+const topShorts = await client.listChannelVideos({ channel: "@mkbhd", tab: "shorts", sort: "popular" });
+
+// A channel's playlists (1 credit); pass a playlist's id to getPlaylist for its videos
+const { playlists } = await client.listChannelPlaylists({ channel: "@mkbhd" });
+
+// A channel's community posts (1 credit)
+const { posts } = await client.listChannelPosts({ channel: "@mkbhd" });
+
+// A channel's banner and avatar (1 credit)
+const { has_banner, banner, avatar } = await client.getChannelBanner({ channel: "@mkbhd" });
+console.log(banner?.largest);
+
+// Videos YouTube suggests next to a video (1 credit)
+const { related } = await client.getRelatedVideos({ v: "dQw4w9WgXcQ" });
+
+// Estimated likes and dislikes (1 credit)
+const { likes, dislikes, estimated } = await client.getVideoDislikes({ v: "dQw4w9WgXcQ" });
+
 // Check remaining credits, plan, and rate limit (free)
 const { plan_credits_left, plan } = await client.getCredits();
 ```
 
-Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideos`) return a continuation token you feed back in on the next call:
+Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideos`, `listChannelPlaylists`, `listChannelPosts`) return a continuation token you feed back in on the next call:
 
 ```ts
 let page = await client.search({ q: "lofi beats" });
@@ -149,6 +168,17 @@ while (page.continuation_token) {
   page = await client.search({ pageToken: page.continuation_token });
 }
 ```
+
+The channel lists take `continuation` instead of `channel` on later pages. `tab` (`"videos"`, `"shorts"` or `"streams"`, the Live tab) and `sort` (`"latest"`, `"popular"` or `"oldest"`) on `listChannelVideos` only apply to a first page: a continuation already carries them, so the SDK leaves them out of continuation requests.
+
+```ts
+let page = await client.listChannelVideos({ channel: "@mkbhd", tab: "streams", sort: "oldest" });
+while (page.has_more && page.continuation_token) {
+  page = await client.listChannelVideos({ continuation: page.continuation_token });
+}
+```
+
+Each call is 1 credit. The dislike numbers are estimates: YouTube no longer publishes dislikes, so `getVideoDislikes` always returns `estimated: true`.
 
 ### Handling errors
 
@@ -180,7 +210,12 @@ try {
 | `getPlaylist(params)` | `GET /playlist` | 1 |
 | `getChannelLatest(params)` | `GET /channel/latest` | 1 credit |
 | `searchChannel(params)` | `GET /channel/search` | 1 |
-| `listChannelVideos(params)` | `GET /channel/videos` | 1 |
+| `listChannelVideos(params)` | `GET /channel/videos` (optional `tab`, `sort`) | 1 |
+| `listChannelPlaylists(params)` | `GET /channel/playlists` | 1 |
+| `listChannelPosts(params)` | `GET /channel/posts` | 1 |
+| `getChannelBanner(params)` | `GET /channel/banner` | 1 |
+| `getRelatedVideos(params)` | `GET /video/related` | 1 |
+| `getVideoDislikes(params)` | `GET /video/dislikes` (estimates) | 1 |
 | `getCredits()` | `GET /credits` | free |
 | `signup(email)` | `POST /signup` | free |
 | `verifySignup(email, otp)` | `POST /signup/verify` | free |
