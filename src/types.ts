@@ -483,6 +483,92 @@ export interface VideoDislikesData {
 }
 
 // ---------------------------------------------------------------------------
+// GET /video (1 credit)
+// ---------------------------------------------------------------------------
+
+export interface GetVideoDetailsParams {
+  /** YouTube video URL (full or short) or an 11-character video ID. */
+  v: string;
+}
+
+export interface VideoThumbnail {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface VideoDetailsData {
+  video_id: string;
+  title: string;
+  description?: string;
+  channel?: {
+    id?: string;
+    name?: string;
+    /** Rounded label as YouTube shows it, e.g. "4.56M subscribers". */
+    subscribers?: string;
+    thumbnail?: string;
+    [key: string]: unknown;
+  };
+  /** Exact view count as a digit string, e.g. "1840125263". */
+  views?: string;
+  /** Rounded label as YouTube shows it, e.g. "19M". */
+  likes?: string;
+  /** As YouTube shows it, e.g. "Oct 24, 2009". */
+  upload_date?: string;
+  /** Length in seconds. */
+  duration?: number;
+  duration_formatted?: string;
+  thumbnails?: VideoThumbnail[];
+  is_live?: boolean;
+  is_private?: boolean;
+  /** The video's tags. */
+  keywords?: string[];
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
+// GET /video/comments (1 credit per page)
+// ---------------------------------------------------------------------------
+
+export interface GetVideoCommentsParams {
+  /** YouTube video URL (full or short) or an 11-character video ID. Required on every page. */
+  v: string;
+  /**
+   * `continuation_token` from the previous page. Sent together with `v`
+   * (it does not replace it). Expires after 24 hours.
+   */
+  continuation?: string;
+}
+
+export interface VideoComment {
+  comment_id: string;
+  link?: string;
+  /** The commenter. */
+  channel?: {
+    id?: string;
+    handle?: string;
+    link?: string;
+    thumbnail?: string;
+    [key: string]: unknown;
+  };
+  /** Relative, as YouTube shows it, e.g. "7 years ago (edited)". */
+  published_date?: string;
+  text: string;
+  /** Rounded label, e.g. "73K". */
+  likes?: string;
+  replies?: number;
+  [key: string]: unknown;
+}
+
+export interface VideoCommentsData {
+  video_id: string;
+  comments: VideoComment[];
+  has_more: boolean;
+  continuation_token?: string | null;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // GET /credits (free)
 // ---------------------------------------------------------------------------
 

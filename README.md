@@ -160,13 +160,20 @@ const { related } = await client.getRelatedVideos({ v: "dQw4w9WgXcQ" });
 // Estimated likes and dislikes (1 credit)
 const { likes, dislikes, estimated } = await client.getVideoDislikes({ v: "dQw4w9WgXcQ" });
 
+// A video's details: title, description, channel, views, likes, duration, tags (1 credit)
+const video = await client.getVideoDetails({ v: "dQw4w9WgXcQ" });
+console.log(video.title, video.views, video.duration_formatted);
+
+// A page of a video's comments, top comments first (1 credit per page)
+const { comments, has_more, continuation_token } = await client.getVideoComments({ v: "dQw4w9WgXcQ" });
+
 // Check remaining credits, plan, and rate limit (free). total_credits_left is
 // plan + top-up combined - use that, not plan_credits_left alone, to check
 // whether the key is actually out of credits.
 const { total_credits_left, plan } = await client.getCredits();
 ```
 
-Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideos`, `listChannelPlaylists`, `listChannelPosts`) return a continuation token you feed back in on the next call:
+Paginated endpoints (`search`, `getPlaylist`, `searchChannel`, `listChannelVideos`, `listChannelPlaylists`, `listChannelPosts`, `getVideoComments`) return a continuation token you feed back in on the next call:
 
 ```ts
 let page = await client.search({ q: "lofi beats" });
@@ -181,6 +188,15 @@ The channel lists take `continuation` instead of `channel` on later pages. `tab`
 let page = await client.listChannelVideos({ channel: "@mkbhd", tab: "streams", sort: "oldest" });
 while (page.has_more && page.continuation_token) {
   page = await client.listChannelVideos({ continuation: page.continuation_token });
+}
+```
+
+`getVideoComments` is different: every page needs the same `v` as well as `continuation` (the token does not replace `v`). A 404 with code `COMMENTS_DISABLED` means comments are turned off or the video does not exist.
+
+```ts
+let comments = await client.getVideoComments({ v: "dQw4w9WgXcQ" });
+while (comments.has_more && comments.continuation_token) {
+  comments = await client.getVideoComments({ v: "dQw4w9WgXcQ", continuation: comments.continuation_token });
 }
 ```
 
@@ -222,6 +238,8 @@ try {
 | `getChannelBanner(params)` | `GET /channel/banner` | 1 |
 | `getRelatedVideos(params)` | `GET /video/related` | 1 |
 | `getVideoDislikes(params)` | `GET /video/dislikes` (estimates) | 1 |
+| `getVideoDetails(params)` | `GET /video` | 1 |
+| `getVideoComments(params)` | `GET /video/comments` (paginated) | 1 per page |
 | `getCredits()` | `GET /credits` | free |
 | `signup(email)` | `POST /signup` | free |
 | `verifySignup(email, otp)` | `POST /signup/verify` | free |

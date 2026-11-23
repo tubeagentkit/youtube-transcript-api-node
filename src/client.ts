@@ -20,6 +20,8 @@ import type {
   GetRelatedVideosParams,
   GetTranscriptLanguagesParams,
   GetTranscriptParams,
+  GetVideoCommentsParams,
+  GetVideoDetailsParams,
   GetVideoDislikesParams,
   GetYouTubeTranscriptOptions,
   ListChannelPlaylistsParams,
@@ -36,6 +38,8 @@ import type {
   TranscriptData,
   TranscriptLanguagesData,
   VerifySignupResponse,
+  VideoCommentsData,
+  VideoDetailsData,
   VideoDislikesData,
 } from "./types.js";
 
@@ -338,6 +342,27 @@ export class GetYouTubeTranscript {
    */
   getVideoDislikes(params: GetVideoDislikesParams): Promise<VideoDislikesData> {
     return this.get<VideoDislikesData>("/video/dislikes", { v: params.v });
+  }
+
+  /**
+   * A video's details: title, description, channel, views, likes, upload
+   * date, duration, thumbnails and tags. 1 credit.
+   */
+  getVideoDetails(params: GetVideoDetailsParams): Promise<VideoDetailsData> {
+    return this.get<VideoDetailsData>("/video", { v: params.v });
+  }
+
+  /**
+   * A page of a video's comments, top comments first. For the next page pass
+   * the same `v` plus `continuation` (unlike the channel lists, `v` is still
+   * required). A 404 `COMMENTS_DISABLED` means comments are off or the video
+   * does not exist. 1 credit per page.
+   */
+  getVideoComments(params: GetVideoCommentsParams): Promise<VideoCommentsData> {
+    return this.get<VideoCommentsData>("/video/comments", {
+      v: params.v,
+      continuation: params.continuation,
+    });
   }
 
   /** Remaining credit balance, plan, and rate limit for this key. Free. */

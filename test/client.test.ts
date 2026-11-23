@@ -306,6 +306,83 @@ describe("channel and video endpoints: playlists, posts, banner, related, dislik
     expect(result.estimated).toBe(true);
   });
 
+  it("getVideoDetails URL-encodes a full video URL and passes the response through", async () => {
+    const data = {
+      video_id: "dQw4w9WgXcQ",
+      title: "Never Gonna Give You Up",
+      description: "d",
+      channel: { id: "UCuAXFkgsw1L7xaCfnd5JJOw", name: "Rick Astley", subscribers: "4.56M subscribers" },
+      views: "1840125263",
+      likes: "19M",
+      upload_date: "Oct 24, 2009",
+      duration: 213,
+      duration_formatted: "3:33",
+      thumbnails: [{ url: "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg", width: 1280, height: 720 }],
+      is_live: false,
+      is_private: false,
+      keywords: ["rick astley"],
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getVideoDetails({ v: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" });
+
+    expect(calledUrl()).toBe(`${BASE}/video?v=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ`);
+    expect(fetchMock.mock.calls[0][1].method).toBe("GET");
+    expect(result).toEqual(data);
+    expect(result.views).toBe("1840125263");
+  });
+
+  it("getVideoComments builds the first-page URL and passes the response through", async () => {
+    const data = {
+      video_id: "dQw4w9WgXcQ",
+      comments: [
+        {
+          comment_id: "Ugz1",
+          link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&lc=Ugz1",
+          channel: { id: "UC1", handle: "@someone" },
+          published_date: "7 years ago (edited)",
+          text: "hello",
+          likes: "109K",
+          replies: 740,
+        },
+      ],
+      has_more: true,
+      continuation_token: "c_next",
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getVideoComments({ v: "dQw4w9WgXcQ" });
+
+    expect(calledUrl()).toBe(`${BASE}/video/comments?v=dQw4w9WgXcQ`);
+    expect(result).toEqual(data);
+  });
+
+  it("getVideoComments sends both v and continuation on a later page", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { success: true, data: { video_id: "dQw4w9WgXcQ", comments: [], has_more: false, continuation_token: null } }),
+    );
+
+    const result = await client.getVideoComments({ v: "dQw4w9WgXcQ", continuation: "c_next" });
+
+    const url = new URL(calledUrl());
+    expect(url.pathname).toBe("/api/v1/video/comments");
+    expect(url.searchParams.get("v")).toBe("dQw4w9WgXcQ");
+    expect(url.searchParams.get("continuation")).toBe("c_next");
+    expect(result.has_more).toBe(false);
+    expect(result.continuation_token).toBeNull();
+  });
+
+  it("getVideoComments surfaces a 404 COMMENTS_DISABLED", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(404, { success: false, code: "COMMENTS_DISABLED", message: "Comments are turned off." }),
+    );
+
+    await expect(client.getVideoComments({ v: "aaaaaaaaaaa" })).rejects.toMatchObject({
+      statusCode: 404,
+      code: "COMMENTS_DISABLED",
+    });
+  });
+
   it("surfaces a 404 from a video endpoint as GetYouTubeTranscriptError", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(404, { success: false, code: "VIDEO_NOT_FOUND", message: "Video not found." }));
 
