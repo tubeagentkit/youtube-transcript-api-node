@@ -54,8 +54,8 @@ Each segment is `{ start, duration, text }` with `start` and `duration` in secon
 | --- | --- |
 | `language_code` | The caption track actually returned |
 | `requested_language` | What you asked for. If it differs from `language_code`, YouTube didn't have that language |
-| `caption_type` | `"manual"` (uploaded by the creator), `"auto"` (YouTube speech recognition), or `null` if unknown |
-| `cached` | `true` when served from the stored copy rather than fetched from YouTube just now |
+| `caption_type` | `"manual"` (uploaded by the creator), `"auto"` (YouTube speech recognition), `"ai"` (an AI transcript, see below), or `null` if unknown |
+| `cached` | `true` when served from the stored copy rather than fetched from YouTube just now. Absent on AI transcripts |
 | `fetched_at` | ISO 8601 time it was fetched from YouTube |
 
 Not sure which languages a video has? `getTranscriptLanguages` lists them (1 credit per call) before you fetch a transcript:
@@ -66,6 +66,42 @@ for (const lang of languages) console.log(lang.language_code, lang.caption_type,
 ```
 
 An empty `languages` list means the video has captions turned off.
+
+### AI transcripts for videos without captions
+
+Pass `mode` to get an AI speech-to-text transcript when a video has no captions:
+
+- `"native"` (default): captions only, 1 credit.
+- `"auto"`: captions if the video has any (1 credit), otherwise an AI transcript.
+- `"generate"`: always an AI transcript.
+
+An AI transcript costs 3 credits per minute of video, rounded up, minimum 3 (videos up to 4 hours). Reading your own AI transcript again within 24 hours costs 0, and credits are refunded automatically if it fails. With an AI mode, `language` is the language spoken; leave it out to use the video's own audio language.
+
+```ts
+const t = await client.getTranscript({ v: "jNQXAC9IVRw", mode: "auto" });
+console.log(t.caption_type, t.source, t.duration_seconds); // "ai" "ai" 19 when the video had no captions
+```
+
+A long video can take a while. When the API answers `202` with a job, `getTranscript` polls it (free, every 5 seconds) until the transcript is ready, for up to 30 minutes by default:
+
+```ts
+const t = await client.getTranscript({ v: "dQw4w9WgXcQ", mode: "generate" }, { timeoutMs: 10 * 60_000 });
+```
+
+To handle the job yourself, use `startTranscript`. It makes one call and returns `{ data, job, creditsCharged }`: `data` is the transcript, or `null` with a `job` to poll.
+
+```ts
+const { data, job, creditsCharged } = await client.startTranscript({ v: "dQw4w9WgXcQ", mode: "generate" });
+console.log("cost:", creditsCharged); // X-Credits-Charged header
+
+if (!data && job) {
+  // later, or from another process:
+  const status = await client.getTranscriptJob({ id: job.job_id }); // { data: null, job: { status: "running", ... } } until done
+  const transcript = await client.waitForTranscript(job.job_id); // or poll until done
+}
+```
+
+A failed job throws its error (`AI_FAILED`, `AUDIO_UNAVAILABLE`); a timeout throws an `Error` naming the job id, and the job keeps running so you can poll it later. Other AI errors: `LIVE_STREAM` and `TOO_LONG` (422), `TOO_MANY_JOBS` (429, 5 already in progress), and `PAYMENT_REQUIRED` (402) with `err.creditsRequired` set to what the transcript needs.
 
 ### Batch: many videos at once
 
@@ -223,7 +259,9 @@ try {
 
 | Method | Endpoint | Credits |
 | --- | --- | --- |
-| `getTranscript(params)` | `GET /transcript` (optional `timestamps: true`) | 1 |
+| `getTranscript(params, options?)` | `GET /transcript` (optional `timestamps: true`, `mode`) | 1 (AI: 3 per minute of video) |
+| `startTranscript(params)` | `GET /transcript`, without waiting for an AI job | 1 (AI: 3 per minute of video) |
+| `getTranscriptJob(params)` / `waitForTranscript(job)` | `GET /transcript/jobs` | free |
 | `getTranscriptLanguages(params)` | `GET /transcript/languages` | 1 credit |
 | `createBatch(params)` | `POST /batch` (up to 100 videos) | 1 per successful video |
 | `getBatch(params)` / `waitForBatch(id)` | `GET /batch` | free |

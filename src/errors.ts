@@ -15,6 +15,8 @@ export class GetYouTubeTranscriptError extends Error {
   public readonly topupCreditsLeft?: number;
   /** Requests made in the current minute, present on 429 responses. */
   public readonly requestsThisMinute?: number;
+  /** Credits an AI transcript needs, present on 402 responses to `mode: 'generate' | 'auto'`. */
+  public readonly creditsRequired?: number;
   /** The raw parsed response body, if the body was valid JSON. */
   public readonly body?: ApiErrorBody;
 
@@ -27,6 +29,7 @@ export class GetYouTubeTranscriptError extends Error {
     this.creditsLeft = body?.creditsLeft;
     this.topupCreditsLeft = body?.topupCreditsLeft;
     this.requestsThisMinute = body?.requestsThisMinute;
+    this.creditsRequired = body?.credits_required;
     this.body = body;
 
     // Maintain proper prototype chain for `instanceof` checks after transpilation.

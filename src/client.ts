@@ -12,12 +12,14 @@ import type {
   CreateBatchParams,
   GetBatchParams,
   WaitForBatchOptions,
+  WaitForTranscriptOptions,
   ChannelVideosData,
   CreditsData,
   GetChannelBannerParams,
   GetChannelLatestParams,
   GetPlaylistParams,
   GetRelatedVideosParams,
+  GetTranscriptJobParams,
   GetTranscriptLanguagesParams,
   GetTranscriptParams,
   GetVideoCommentsParams,
@@ -36,7 +38,10 @@ import type {
   SearchParams,
   SignupResponse,
   TranscriptData,
+  TranscriptJob,
+  TranscriptJobResponse,
   TranscriptLanguagesData,
+  TranscriptResponse,
   VerifySignupResponse,
   VideoCommentsData,
   VideoDetailsData,
@@ -79,6 +84,20 @@ async function request<T>(
   url: string,
   init: RequestInit,
 ): Promise<T> {
+  const { body } = await send(fetchImpl, url, init);
+  const parsed = body as ApiSuccessBody<T> | T;
+  if (parsed && typeof parsed === "object" && "data" in parsed) {
+    return (parsed as ApiSuccessBody<T>).data;
+  }
+  return parsed as T;
+}
+
+/** Like `request`, but returns the whole parsed body and the response (for 202s and headers). */
+async function send(
+  fetchImpl: typeof fetch,
+  url: string,
+  init: RequestInit,
+): Promise<{ response: Response; body: unknown }> {
   let response: Response;
   try {
     response = await fetchImpl(url, init);
@@ -95,11 +114,11 @@ async function request<T>(
     throw new GetYouTubeTranscriptError(response.status, body);
   }
 
-  const parsed = (await response.json()) as ApiSuccessBody<T> | T;
-  if (parsed && typeof parsed === "object" && "data" in parsed) {
-    return (parsed as ApiSuccessBody<T>).data;
-  }
-  return parsed as T;
+  return { response, body: (await response.json()) as unknown };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -138,12 +157,21 @@ export class GetYouTubeTranscript {
 
   private get<T>(path: string, query: Record<string, QueryValue> = {}): Promise<T> {
     const url = `${this.baseUrl}${path}${buildQuery(query)}`;
-    return request<T>(this.fetchImpl, url, {
+    return request<T>(this.fetchImpl, url, this.getInit());
+  }
+
+  /** A GET that keeps the whole body and the response, for endpoints that can answer 202. */
+  private getRaw(path: string, query: Record<string, QueryValue>): Promise<{ response: Response; body: unknown }> {
+    return send(this.fetchImpl, `${this.baseUrl}${path}${buildQuery(query)}`, this.getInit());
+  }
+
+  private getInit(): RequestInit {
+    return {
       method: "GET",
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
       },
-    });
+    };
   }
 
   private post<T>(path: string, body: Record<string, unknown>, extraHeaders: Record<string, string> = {}): Promise<T> {
@@ -162,13 +190,97 @@ export class GetYouTubeTranscript {
   /**
    * Full transcript for one video, plus title/author/thumbnail metadata. 1 credit.
    * Pass `timestamps: true` to also get per-line `segments` (same credit).
+   *
+   * `mode: 'auto'` (captions if any, otherwise AI) or `mode: 'generate'`
+   * (always AI) gives an AI speech-to-text transcript for videos without
+   * captions, at 3 credits per minute of video (minimum 3). If it is still
+   * being made, this polls the job (free) until it is done, up to
+   * `options.timeoutMs`. Use `startTranscript` to get the job back instead
+   * of waiting.
    */
-  getTranscript(params: GetTranscriptParams): Promise<TranscriptData> {
-    return this.get<TranscriptData>("/transcript", {
+  async getTranscript(params: GetTranscriptParams, options: WaitForTranscriptOptions = {}): Promise<TranscriptData> {
+    const { data, job } = await this.startTranscript(params);
+    if (data) return data;
+    if (!job) {
+      throw new GetYouTubeTranscriptError(0, undefined, "GetYouTubeTranscript.getTranscript: answer had no transcript and no job");
+    }
+    return this.waitForTranscript(job, { ...options, timestamps: params.timestamps });
+  }
+
+  /**
+   * One GET /transcript call without waiting. `data` is the transcript, or
+   * `null` with a `job` to poll (`getTranscriptJob` / `waitForTranscript`)
+   * when an AI transcript is still being made. `creditsCharged` is what
+   * the call cost (X-Credits-Charged header).
+   */
+  async startTranscript(params: GetTranscriptParams): Promise<TranscriptResponse> {
+    const { response, body } = await this.getRaw("/transcript", {
       v: params.v,
       language: params.language,
       timestamps: params.timestamps ? true : undefined,
+      mode: params.mode,
     });
+    const parsed = body as { data?: TranscriptData | null; job?: TranscriptJob };
+    const result: TranscriptResponse = { data: parsed.data ?? null };
+    if (parsed.job) result.job = parsed.job;
+    const charged = response.headers.get("X-Credits-Charged");
+    if (charged !== null && charged !== "" && Number.isFinite(Number(charged))) {
+      result.creditsCharged = Number(charged);
+    }
+    return result;
+  }
+
+  /**
+   * Status or result of an AI transcript job. Free. `data` is `null` while
+   * the job is queued or running. A failed job throws its error (e.g.
+   * `AI_FAILED`, `AUDIO_UNAVAILABLE`); its credits are refunded.
+   */
+  async getTranscriptJob(params: GetTranscriptJobParams): Promise<TranscriptJobResponse> {
+    const { body } = await this.getRaw("/transcript/jobs", {
+      id: params.id,
+      timestamps: params.timestamps ? true : undefined,
+    });
+    const parsed = body as { data?: TranscriptData | null; job: TranscriptJob };
+    return { data: parsed.data ?? null, job: parsed.job };
+  }
+
+  /**
+   * Poll an AI transcript job until it is done and return the transcript.
+   * Free. Accepts the job from `startTranscript` or its `job_id`. Throws the
+   * job's error if it fails, or an Error after `timeoutMs` (the job keeps
+   * running and can be polled again later).
+   */
+  async waitForTranscript(
+    job: TranscriptJob | string,
+    options: WaitForTranscriptOptions & { timestamps?: boolean } = {},
+  ): Promise<TranscriptData> {
+    const id = typeof job === "string" ? job : job.job_id;
+    const serverInterval = typeof job === "string" ? undefined : job.poll_interval_seconds;
+    const { timeoutMs = 1_800_000, timestamps } = options;
+    let pollIntervalMs = options.pollIntervalMs ?? (serverInterval ?? 5) * 1000;
+    const deadline = Date.now() + timeoutMs;
+
+    for (;;) {
+      const { data, job: current } = await this.getTranscriptJob({ id, timestamps });
+      if (data) return data;
+      if (current?.status === "failed") {
+        throw new GetYouTubeTranscriptError(0, {
+          success: false,
+          code: current.error?.code ?? "AI_FAILED",
+          message: current.error?.message ?? "The AI transcript could not be made. Credits are refunded.",
+          job: current,
+        });
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `GetYouTubeTranscript.waitForTranscript: job ${id} not done after ${timeoutMs} ms (status ${current?.status ?? "unknown"}). Poll it later with getTranscriptJob.`,
+        );
+      }
+      if (options.pollIntervalMs === undefined && current?.poll_interval_seconds) {
+        pollIntervalMs = current.poll_interval_seconds * 1000;
+      }
+      await sleep(Math.min(pollIntervalMs, Math.max(0, deadline - Date.now())));
+    }
   }
 
   /**

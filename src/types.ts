@@ -13,6 +13,10 @@ export interface ApiErrorBody {
   topupCreditsLeft?: number;
   /** Present on 429 responses. */
   requestsThisMinute?: number;
+  /** Credits an AI transcript needs. Present on 402 responses to `mode: 'generate' | 'auto'`. */
+  credits_required?: number;
+  /** The failed AI transcript job, on errors from `getTranscriptJob`. */
+  job?: TranscriptJob;
   [key: string]: unknown;
 }
 
@@ -25,16 +29,80 @@ export interface ApiSuccessBody<T> {
 // GET /transcript
 // ---------------------------------------------------------------------------
 
+/**
+ * `native` (default): captions only, 1 credit.
+ * `auto`: captions if the video has any (1 credit), otherwise an AI speech-to-text transcript.
+ * `generate`: always an AI transcript.
+ * An AI transcript costs 3 credits per minute of video, rounded up, minimum 3. Videos up to 4 hours.
+ */
+export type TranscriptMode = "native" | "auto" | "generate";
+
 export interface GetTranscriptParams {
   /** YouTube video URL (full or short) or an 11-character video ID. */
   v: string;
-  /** Caption language code, e.g. 'en', 'es'. Defaults to 'en'. */
+  /**
+   * Caption language code, e.g. 'en', 'es'. Defaults to 'en'. With an AI
+   * `mode`, the language spoken in the video; omit it to use the video's own
+   * audio language.
+   */
   language?: string;
   /**
    * Also return per-line timing as `segments`. Same 1 credit. The query
    * param is only sent when this is `true`.
    */
   timestamps?: boolean;
+  /** See {@link TranscriptMode}. Defaults to 'native'. Only sent when set. */
+  mode?: TranscriptMode;
+}
+
+export type TranscriptJobStatus = "queued" | "running" | "done" | "failed";
+
+/** An AI transcript job, returned when the transcript takes longer than about 20 seconds. */
+export interface TranscriptJob {
+  job_id: string;
+  status: TranscriptJobStatus;
+  video_id: string;
+  /** Credits taken when the job started. Refunded automatically if it fails. */
+  credits_charged: number;
+  /** Path to poll: /api/v1/transcript/jobs?id=<job_id>. */
+  poll_url: string;
+  /** How long to wait between polls (5). */
+  poll_interval_seconds: number;
+  created_at: string;
+  /** Present only when `status` is 'failed'. */
+  error?: { code?: string; message?: string };
+}
+
+/**
+ * One answer from GET /transcript, unwrapped: `data` is the transcript
+ * (HTTP 200), or `null` with a `job` to poll (HTTP 202).
+ */
+export interface TranscriptResponse {
+  data: TranscriptData | null;
+  /** Present on a 202, and on AI transcripts that came from a job. */
+  job?: TranscriptJob;
+  /** The X-Credits-Charged header: what this call cost. Sent on `mode: 'auto' | 'generate'` answers. */
+  creditsCharged?: number;
+}
+
+export interface GetTranscriptJobParams {
+  /** The `job_id` from a 202 answer. */
+  id: string;
+  /** Include `segments` in the finished transcript. */
+  timestamps?: boolean;
+}
+
+/** GET /transcript/jobs: `data` is `null` while the job is queued or running. */
+export interface TranscriptJobResponse {
+  data: TranscriptData | null;
+  job: TranscriptJob;
+}
+
+export interface WaitForTranscriptOptions {
+  /** Milliseconds between polls. Defaults to the job's `poll_interval_seconds` (5 seconds). */
+  pollIntervalMs?: number;
+  /** Give up after this many milliseconds. Defaults to 1800000 (30 minutes). The job keeps running; poll it later with `getTranscriptJob`. */
+  timeoutMs?: number;
 }
 
 /** One caption line with its timing, returned in `segments` when `timestamps: true`. */
@@ -46,8 +114,8 @@ export interface Segment {
   text: string;
 }
 
-/** `manual` = uploaded by the creator, `auto` = YouTube speech recognition, `null` = unknown (older transcripts). */
-export type CaptionType = "manual" | "auto" | null;
+/** `manual` = uploaded by the creator, `auto` = YouTube speech recognition, `ai` = our AI transcript (`mode: 'auto' | 'generate'`), `null` = unknown (older transcripts). */
+export type CaptionType = "manual" | "auto" | "ai" | null;
 
 /** Fields shared by a transcript and a succeeded batch item. */
 export interface TranscriptFields {
@@ -67,11 +135,15 @@ export interface TranscriptFields {
   fetched_at: string | null;
   /** Per-line timing. Present only when the request set `timestamps: true`. */
   segments?: Segment[];
+  /** Always 'ai'. Present only on AI transcripts. */
+  source?: "ai";
+  /** Video length in seconds. Present only on AI transcripts; the cost is based on it. */
+  duration_seconds?: number;
 }
 
 export interface TranscriptData extends TranscriptFields {
-  /** `true` when served from the stored copy rather than fetched from YouTube just now. */
-  cached: boolean;
+  /** `true` when served from the stored copy rather than fetched from YouTube just now. Absent on AI transcripts. */
+  cached?: boolean;
 }
 
 // ---------------------------------------------------------------------------
