@@ -203,6 +203,10 @@ console.log(video.title, video.views, video.duration_formatted);
 // A page of a video's comments, top comments first (1 credit per page)
 const { comments, has_more, continuation_token } = await client.getVideoComments({ v: "dQw4w9WgXcQ" });
 
+// A TikTok video's captions with start times: URL, vm.tiktok.com short link, or numeric ID (1 credit)
+const tiktok = await client.getTikTokTranscript({ url: "https://www.tiktok.com/@thedailybugleofficial/video/7039900146041343278" });
+console.log(tiktok.author, tiktok.language, tiktok.segments[0]); // { start: 4.525, text: "In your book, ..." }
+
 // Check remaining credits, plan, and rate limit (free). total_credits_left is
 // plan + top-up combined - use that, not plan_credits_left alone, to check
 // whether the key is actually out of credits.
@@ -237,6 +241,8 @@ while (comments.has_more && comments.continuation_token) {
 ```
 
 Each call is 1 credit. The dislike numbers are estimates: YouTube no longer publishes dislikes, so `getVideoDislikes` always returns `estimated: true`.
+
+`getTikTokTranscript` throws a 404 with code `TRANSCRIPT_NOT_FOUND` when the video has no captions or does not exist; that call is not charged.
 
 ### Handling errors
 
@@ -278,6 +284,7 @@ try {
 | `getVideoDislikes(params)` | `GET /video/dislikes` (estimates) | 1 |
 | `getVideoDetails(params)` | `GET /video` | 1 |
 | `getVideoComments(params)` | `GET /video/comments` (paginated) | 1 per page |
+| `getTikTokTranscript(params)` | `GET /tiktok/transcript` | 1 |
 | `getCredits()` | `GET /credits` | free |
 | `signup(email)` | `POST /signup` | free |
 | `verifySignup(email, otp)` | `POST /signup/verify` | free |

@@ -383,6 +383,55 @@ describe("channel and video endpoints: playlists, posts, banner, related, dislik
     });
   });
 
+  it("getTikTokTranscript sends url as a query param with auth and passes the response through", async () => {
+    const tiktokUrl = "https://www.tiktok.com/@thedailybugleofficial/video/7039900146041343278";
+    const data = {
+      video_id: "7039900146041343278",
+      author: "thedailybugleofficial",
+      description: "d",
+      language: "eng-US",
+      auto_generated: true,
+      segments: [{ start: 4.525, text: "In your book, you revealed that the name spider man was your idea." }],
+    };
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { success: true, data }));
+
+    const result = await client.getTikTokTranscript({ url: tiktokUrl });
+
+    const url = new URL(calledUrl());
+    expect(url.origin + url.pathname).toBe(`${BASE}/tiktok/transcript`);
+    expect(url.searchParams.get("url")).toBe(tiktokUrl);
+    expect([...url.searchParams.keys()]).toEqual(["url"]);
+    const init = fetchMock.mock.calls[0][1];
+    expect(init.method).toBe("GET");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer sk_live_test123");
+    expect(result).toEqual(data);
+    expect(result.segments[0].start).toBe(4.525);
+  });
+
+  it("getTikTokTranscript accepts a numeric video id", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        success: true,
+        data: { video_id: "7039900146041343278", author: "a", description: "", language: "eng-US", auto_generated: false, segments: [] },
+      }),
+    );
+
+    await client.getTikTokTranscript({ url: "7039900146041343278" });
+
+    expect(calledUrl()).toBe(`${BASE}/tiktok/transcript?url=7039900146041343278`);
+  });
+
+  it("getTikTokTranscript surfaces a 404 TRANSCRIPT_NOT_FOUND", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(404, { success: false, code: "TRANSCRIPT_NOT_FOUND", message: "No captions found for this TikTok video." }),
+    );
+
+    await expect(client.getTikTokTranscript({ url: "7039900146041343278" })).rejects.toMatchObject({
+      statusCode: 404,
+      code: "TRANSCRIPT_NOT_FOUND",
+    });
+  });
+
   it("surfaces a 404 from a video endpoint as GetYouTubeTranscriptError", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(404, { success: false, code: "VIDEO_NOT_FOUND", message: "Video not found." }));
 

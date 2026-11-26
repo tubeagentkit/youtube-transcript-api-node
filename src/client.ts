@@ -19,6 +19,7 @@ import type {
   GetChannelLatestParams,
   GetPlaylistParams,
   GetRelatedVideosParams,
+  GetTikTokTranscriptParams,
   GetTranscriptJobParams,
   GetTranscriptLanguagesParams,
   GetTranscriptParams,
@@ -37,6 +38,7 @@ import type {
   SearchData,
   SearchParams,
   SignupResponse,
+  TikTokTranscriptData,
   TranscriptData,
   TranscriptJob,
   TranscriptJobResponse,
@@ -475,6 +477,16 @@ export class GetYouTubeTranscript {
       v: params.v,
       continuation: params.continuation,
     });
+  }
+
+  /**
+   * A TikTok video's captions with start times. `url` is a TikTok video URL,
+   * a short link (vm.tiktok.com/...), or a numeric video ID. A 404
+   * `TRANSCRIPT_NOT_FOUND` means the video has no captions or does not exist
+   * (not charged). 1 credit.
+   */
+  getTikTokTranscript(params: GetTikTokTranscriptParams): Promise<TikTokTranscriptData> {
+    return this.get<TikTokTranscriptData>("/tiktok/transcript", { url: params.url });
   }
 
   /** Remaining credit balance, plan, and rate limit for this key. Free. */

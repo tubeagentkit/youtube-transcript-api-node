@@ -641,6 +641,36 @@ export interface VideoCommentsData {
 }
 
 // ---------------------------------------------------------------------------
+// GET /tiktok/transcript (1 credit)
+// ---------------------------------------------------------------------------
+
+export interface GetTikTokTranscriptParams {
+  /** TikTok video URL, short link (vm.tiktok.com/...), or numeric video ID. */
+  url: string;
+}
+
+/** One TikTok caption line. Unlike `Segment`, there is no `duration`. */
+export interface TikTokSegment {
+  /** Start time in seconds. */
+  start: number;
+  text: string;
+}
+
+export interface TikTokTranscriptData {
+  video_id: string;
+  /** The creator's username, without the @. */
+  author: string;
+  /** The video's caption text, cut to 500 characters. */
+  description: string;
+  /** Caption language, e.g. "eng-US". */
+  language: string;
+  /** True when TikTok generated the captions from speech. */
+  auto_generated: boolean;
+  segments: TikTokSegment[];
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // GET /credits (free)
 // ---------------------------------------------------------------------------
 
